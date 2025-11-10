@@ -1,63 +1,82 @@
 # AWS Lambda + DynamoDB Workshop
 
-A simple, hands-on workshop on deploying FastAPI to AWS Lambda and using DynamoDB. Learn serverless architecture step-by-step with code examples.
+A hands-on guide to deploying **FastAPI** with **AWS Lambda** and **DynamoDB** using the **Serverless Framework**.  
+Learn the principles of **serverless architecture** and **clean architecture layering** while building a fully functional API.
 
-## Prerequisites
+---
 
-- AWS Account with CLI configured (`aws configure`)
-- Python 3.11+
-- Node.js 18+ (for Serverless Framework)
+## 🎯 Clean Architecture Layers
+
+The project structure enforces a clear separation of concerns:
+
+| Layer | Responsibility | Components |
+| :--- | :--- | :--- |
+| **Controllers** | **Interface/HTTP** - Handles incoming HTTP requests, validates input, and returns HTTP responses. | `controllers/` |
+| **Use Cases** | **Business Logic** - Contains the core application rules and orchestrates data flow to and from the Repositories. | `usecases/` |
+| **Repositories** | **Data Access** - Abstracts all interactions with the database (DynamoDB). | `repositories/`, `db/` |
+| **Models** | **Data Structure** - Defines data shapes for request/response and database entities (using Pydantic). | `models/` |
+
+**Why This Matters**: This separation ensures that the business logic (Use Cases) is isolated, making the application easier to test, maintain, and adapt to changes in the database or API structure.
+
+## 🧩 Prerequisites
+
+Before you begin, make sure you have the following installed:
+
+- ✅ AWS Account with CLI configured (`aws configure`)
+- 🐍 Python 3.11+
+- 🧰 Node.js 18+ (for Serverless Framework)
 
 ### Quick Setup
 
-\`\`\`bash
+
 # Install Serverless Framework
 npm install -g serverless
 
 # Install AWS CLI
 pip install awscli
 
-# Verify
+# Verify installation
 serverless --version
 aws --version
-\`\`\`
+
 
 ## Project Structure
 
-\`\`\`
+```bash
 apps/piowise-be/
 ├── controllers/        # API endpoints
 ├── repositories/       # DynamoDB operations
-├── usecases/          # Business logic
-├── models/            # Data models
-├── db/                # Database config
-├── app.py             # FastAPI app
-├── serverless.yml     # Deployment config
-├── requirements.txt   # Dependencies
+├── usecases/           # Business logic
+├── models/             # Data models
+├── db/                 # Database config
+├── app.py              # FastAPI app entry point
+├── serverless.yml      # Deployment configuration
+├── requirements.txt    # Python dependencies
 └── README.md
-\`\`\`
-
+```
 ## Step 1: Setup Local Environment
 
-\`\`\`bash
+```bash
 cd apps/piowise-be
 python -m venv venv
+
 source venv/bin/activate  # macOS/Linux
-# On Windows: venv\\Scripts\\activate
+or 
+venv\\Scripts\\activate  # Windows
 
 pip install -r requirements.txt
-\`\`\`
+```
 
 ### requirements.txt
 
-\`\`\`
+```yaml
 fastapi==0.104.1
 uvicorn==0.24.0
 boto3==1.28.85
 mangum==0.17.0
 pydantic==2.5.0
 python-dotenv==1.0.0
-\`\`\`
+```
 
 ## Step 2: Create DynamoDB Table
 
@@ -78,7 +97,7 @@ aws dynamodb create-table \
 
 **models/item.py**:
 
-\`\`\`python
+```python
 from pydantic import BaseModel
 from typing import Optional
 
@@ -87,13 +106,13 @@ class Item(BaseModel):
     name: str
     description: Optional[str] = None
     price: float
-\`\`\`
+```
 
 ### 3.2 Database Configuration
 
 **db/dynamodb.py**:
 
-\`\`\`python
+```python
 import boto3
 import os
 
@@ -104,13 +123,13 @@ dynamodb = boto3.resource(
 
 def get_table(table_name: str):
     return dynamodb.Table(table_name)
-\`\`\`
+```
 
 ### 3.3 Repository Layer
 
 **repositories/item_repository.py**:
 
-\`\`\`python
+```python
 from db.dynamodb import get_table
 from models.item import Item
 
@@ -132,13 +151,13 @@ class ItemRepository:
     
     def delete(self, item_id: str):
         self.table.delete_item(Key={'id': item_id})
-\`\`\`
+```
 
 ### 3.4 Use Case Layer
 
 **usecases/item_usecase.py**:
 
-\`\`\`python
+```python
 from repositories.item_repository import ItemRepository
 from models.item import Item
 
@@ -157,13 +176,13 @@ class ItemUseCase:
     
     def delete_item(self, item_id: str):
         self.repo.delete(item_id)
-\`\`\`
+```
 
 ### 3.5 Controller Layer
 
 **controllers/item_controller.py**:
 
-\`\`\`python
+```python
 from fastapi import APIRouter, HTTPException
 from models.item import Item
 from usecases.item_usecase import ItemUseCase
@@ -190,13 +209,13 @@ def list_items():
 def delete_item(item_id: str):
     usecase.delete_item(item_id)
     return {"message": "Item deleted"}
-\`\`\`
+```
 
 ### 3.6 Main FastAPI App
 
 **app.py**:
 
-\`\`\`python
+```python
 from fastapi import FastAPI
 from mangum import Mangum
 from controllers.item_controller import router as item_router
@@ -210,11 +229,11 @@ def health():
 
 # Lambda handler
 handler = Mangum(app)
-\`\`\`
+```
 
 ## Step 4: Test Locally with Uvicorn
 
-\`\`\`bash
+```bash
 # Run the app
 uvicorn app:app --reload
 
@@ -228,7 +247,7 @@ curl http://localhost:8000/api/items/1
 curl http://localhost:8000/api/items
 
 curl -X DELETE http://localhost:8000/api/items/1
-\`\`\`
+```
 
 ## Step 5: Deploy to AWS Lambda
 
@@ -236,7 +255,7 @@ curl -X DELETE http://localhost:8000/api/items/1
 
 **serverless.yml**:
 
-\`\`\`yaml
+```yaml
 service: piowise-api
 
 frameworkVersion: '3'
@@ -277,11 +296,11 @@ plugins:
 custom:
   pythonRequirements:
     dockerizePip: true
-\`\`\`
+```
 
 ### 5.2 Deploy Steps
 
-\`\`\`bash
+```bash
 # Install Serverless plugin
 npm install --save-dev serverless-python-requirements
 
@@ -292,13 +311,13 @@ serverless deploy
 serverless logs -f api --tail
 
 # Get API endpoint from deployment output
-\`\`\`
+```
 
 ## Step 6: Test Deployed API
 
 After deployment, use the API endpoint provided:
 
-\`\`\`bash
+```bash
 API_URL="https://your-api-id.execute-api.ap-southeast-1.amazonaws.com/dev"
 
 # Create item
@@ -314,17 +333,17 @@ curl $API_URL/api/items
 
 # Health check
 curl $API_URL/health
-\`\`\`
+```
 
 ## Step 7: Cleanup
 
-\`\`\`bash
+```bash
 # Remove Lambda and API Gateway
 serverless remove
 
 # Delete DynamoDB table
 aws dynamodb delete-table --table-name items --region ap-southeast-1
-\`\`\`
+```
 
 ## Architecture Overview
 
