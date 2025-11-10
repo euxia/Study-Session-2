@@ -64,12 +64,12 @@ python-dotenv==1.0.0
 Create a table in AWS:
 
 \`\`\`bash
-aws dynamodb create-table \\
-  --table-name items \\
-  --attribute-definitions AttributeName=id,AttributeType=S \\
-  --key-schema AttributeName=id,KeyType=HASH \\
-  --billing-mode PAY_PER_REQUEST \\
-  --region us-east-1
+aws dynamodb create-table \
+  --table-name items \
+  --attribute-definitions AttributeName=id,AttributeType=S \
+  --key-schema AttributeName=id,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST \
+  --region ap-southeast-1
 \`\`\`
 
 ## Step 3: Build Your FastAPI App
@@ -219,8 +219,8 @@ handler = Mangum(app)
 uvicorn app:app --reload
 
 # In another terminal, test endpoints
-curl -X POST http://localhost:8000/api/items \\
-  -H "Content-Type: application/json" \\
+curl -X POST http://localhost:8000/api/items \
+  -H "Content-Type: application/json" \
   -d '{"id":"1","name":"Widget","price":9.99}'
 
 curl http://localhost:8000/api/items/1
@@ -256,7 +256,7 @@ provider:
             - dynamodb:PutItem
             - dynamodb:DeleteItem
             - dynamodb:Scan
-          Resource: "arn:aws:dynamodb:us-east-1:*:table/items"
+          Resource: "arn:aws:dynamodb:ap-southeast-1:*:table/items"
 
 functions:
   api:
@@ -299,11 +299,11 @@ serverless logs -f api --tail
 After deployment, use the API endpoint provided:
 
 \`\`\`bash
-API_URL="https://your-api-id.execute-api.us-east-1.amazonaws.com/dev"
+API_URL="https://your-api-id.execute-api.ap-southeast-1.amazonaws.com/dev"
 
 # Create item
-curl -X POST $API_URL/api/items \\
-  -H "Content-Type: application/json" \\
+curl -X POST $API_URL/api/items \
+  -H "Content-Type: application/json" \
   -d '{"id":"1","name":"Widget","price":9.99}'
 
 # Get item
