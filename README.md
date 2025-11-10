@@ -82,14 +82,14 @@ python-dotenv==1.0.0
 
 Create a table in AWS:
 
-\`\`\`bash
+```bash
 aws dynamodb create-table \
   --table-name items \
   --attribute-definitions AttributeName=id,AttributeType=S \
   --key-schema AttributeName=id,KeyType=HASH \
   --billing-mode PAY_PER_REQUEST \
   --region ap-southeast-1
-\`\`\`
+```
 
 ## Step 3: Build Your FastAPI App
 
