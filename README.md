@@ -248,13 +248,13 @@ handler = Mangum(app)
 uvicorn app:app --reload
 
 # In another terminal, test endpoints
-curl -X POST http://localhost:8000/api/items \
+curl -X POST http://localhost:8000/api/items/ \
   -H "Content-Type: application/json" \
   -d '{"id":"1","name":"Widget","price":9.99}'
 
 curl http://localhost:8000/api/items/1
 
-curl http://localhost:8000/api/items
+curl http://localhost:8000/api/items/
 
 curl -X DELETE http://localhost:8000/api/items/1
 ```
