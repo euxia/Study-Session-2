@@ -22,15 +22,15 @@ The project structure enforces a clear separation of concerns:
 
 Before you begin, make sure you have the following installed:
 
-- ✅ AWS Account with CLI configured (`aws configure`)
+- ✅ AWS Account with CLI configured (`aws configure`) - you’ll need your IAM Access Key ID and Secret Access Key to set this up.
 - 🐍 Python 3.11+
 - 🧰 Node.js 18+ (for Serverless Framework)
 
-### Quick Setup
+## Quick Setup
 
-
+```bash
 # Install Serverless Framework
-npm install -g serverless
+npm install -g serverless@3
 
 # Install AWS CLI
 pip install awscli
@@ -39,11 +39,15 @@ pip install awscli
 serverless --version
 aws --version
 
+# If not yet configured do
+aws configure
+```
+
 
 ## Project Structure
 
 ```bash
-apps/piowise-be/
+awsccdept-fastAPI-dynamoDB/
 ├── controllers/        # API endpoints
 ├── repositories/       # DynamoDB operations
 ├── usecases/           # Business logic
@@ -56,27 +60,34 @@ apps/piowise-be/
 ```
 ## Step 1: Setup Local Environment
 
+Create a `requirements.txt` with all dependencies:
+
+```yaml
+fastapi==0.115.12
+uvicorn==0.34.3
+boto3>=1.28.0,<2.0
+botocore>=1.31.0,<2.0
+mangum==0.19.0
+pydantic==2.11.5
+python-dotenv==1.1.0
+```
+
+Create and activate a virtual environment, then install dependencies:
+
 ```bash
-cd apps/piowise-be
 python -m venv venv
 
-source venv/bin/activate  # macOS/Linux
-or 
-venv\\Scripts\\activate  # Windows
+# macOS/Linux
+source venv/bin/activate
 
+# Windows
+venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### requirements.txt
 
-```yaml
-fastapi==0.104.1
-uvicorn==0.24.0
-boto3==1.28.85
-mangum==0.17.0
-pydantic==2.5.0
-python-dotenv==1.0.0
-```
 
 ## Step 2: Create DynamoDB Table
 
@@ -100,12 +111,13 @@ aws dynamodb create-table \
 ```python
 from pydantic import BaseModel
 from typing import Optional
+from decimal import Decimal
 
 class Item(BaseModel):
     id: str
     name: str
     description: Optional[str] = None
-    price: float
+    price: Decimal
 ```
 
 ### 3.2 Database Configuration
@@ -130,27 +142,38 @@ def get_table(table_name: str):
 **repositories/item_repository.py**:
 
 ```python
-from db.dynamodb import get_table
-from models.item import Item
+from fastapi import HTTPException
 
 class ItemRepository:
     def __init__(self):
         self.table = get_table('items')
-    
+
     def create(self, item: Item):
-        self.table.put_item(Item=item.dict())
-        return item
-    
+        try:
+            self.table.put_item(Item=item.dict())
+            return item
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to create item: {e}")
+
     def get(self, item_id: str):
-        response = self.table.get_item(Key={'id': item_id})
-        return response.get('Item')
-    
+        try:
+            response = self.table.get_item(Key={'id': item_id})
+            return response.get('Item')
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to get item: {e}")
+
     def list_all(self):
-        response = self.table.scan()
-        return response.get('Items', [])
-    
+        try:
+            response = self.table.scan()
+            return response.get('Items', [])
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to list items: {e}")
+
     def delete(self, item_id: str):
-        self.table.delete_item(Key={'id': item_id})
+        try:
+            self.table.delete_item(Key={'id': item_id})
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to delete item: {e}")
 ```
 
 ### 3.4 Use Case Layer
@@ -256,16 +279,13 @@ curl -X DELETE http://localhost:8000/api/items/1
 **serverless.yml**:
 
 ```yaml
-service: piowise-api
-
+service: awsccdept-fastAPI-dynamoDB
 frameworkVersion: '3'
 
 provider:
   name: aws
   runtime: python3.11
   region: ap-southeast-1
-  environment:
-    AWS_REGION: ap-southeast-1
   iam:
     role:
       statements:
@@ -281,14 +301,7 @@ functions:
   api:
     handler: app.handler
     events:
-      - http:
-          path: /{proxy+}
-          method: ANY
-          cors: true
-      - http:
-          path: /
-          method: ANY
-          cors: true
+      - httpApi: '*'
 
 plugins:
   - serverless-python-requirements
@@ -318,18 +331,21 @@ serverless logs -f api --tail
 After deployment, use the API endpoint provided:
 
 ```bash
-API_URL="https://your-api-id.execute-api.ap-southeast-1.amazonaws.com/dev"
+# Get the API URL from the deployment output
+sls info
+
+API_URL="https://your-api-id.execute-api.ap-southeast-1.amazonaws.com"
 
 # Create item
-curl -X POST $API_URL/api/items \
+curl -X POST "$API_URL/api/items/" \
   -H "Content-Type: application/json" \
-  -d '{"id":"1","name":"Widget","price":9.99}'
+  -d '{"id":"1","name":"Widget","price":9}'
 
 # Get item
-curl $API_URL/api/items/1
+curl $API_URL/api/items/{item_id}
 
 # List all items
-curl $API_URL/api/items
+curl $API_URL/api/items/
 
 # Health check
 curl $API_URL/health
@@ -371,6 +387,8 @@ aws dynamodb delete-table --table-name items --region ap-southeast-1
 
 **Serverless Framework**: Infrastructure-as-code tool for deploying serverless applications.
 
+**boto3**: AWS SDK for Python — allows Python applications to interact with AWS services like Lambda, S3, and DynamoDB programmatically.
+
 ## Resources
 
 - [AWS Lambda Docs](https://docs.aws.amazon.com/lambda/)
@@ -378,6 +396,7 @@ aws dynamodb delete-table --table-name items --region ap-southeast-1
 - [FastAPI Docs](https://fastapi.tiangolo.com/)
 - [Serverless Framework](https://www.serverless.com/)
 - [Mangum](https://mangum.io/)
+- [Boto3] (https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)
 
 ## Troubleshooting
 
