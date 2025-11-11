@@ -5,19 +5,6 @@ Learn the principles of **serverless architecture** and **clean architecture lay
 
 ---
 
-## 🎯 Clean Architecture Layers
-
-The project structure enforces a clear separation of concerns:
-
-| Layer | Responsibility | Components |
-| :--- | :--- | :--- |
-| **Controllers** | **Interface/HTTP** - Handles incoming HTTP requests, validates input, and returns HTTP responses. | `controllers/` |
-| **Use Cases** | **Business Logic** - Contains the core application rules and orchestrates data flow to and from the Repositories. | `usecases/` |
-| **Repositories** | **Data Access** - Abstracts all interactions with the database (DynamoDB). | `repositories/`, `db/` |
-| **Models** | **Data Structure** - Defines data shapes for request/response and database entities (using Pydantic). | `models/` |
-
-**Why This Matters**: This separation ensures that the business logic (Use Cases) is isolated, making the application easier to test, maintain, and adapt to changes in the database or API structure.
-
 ## 🧩 Prerequisites
 
 Before you begin, make sure you have the following installed:
