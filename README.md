@@ -383,7 +383,7 @@ aws dynamodb delete-table --table-name items --region ap-southeast-1
 - [FastAPI Docs](https://fastapi.tiangolo.com/)
 - [Serverless Framework](https://www.serverless.com/)
 - [Mangum](https://mangum.io/)
-- [Boto3] (https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)
+- [Boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)
 
 ## Troubleshooting
 
